@@ -126,7 +126,7 @@ def create_heatmap_image(excel_file, options):
         
         # --- 7. 输出图片 (不变) ---
         buf = io.BytesIO()
-        plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0.0) # pad_inches=0.0 尽可能减少白边
+        plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0.05) # pad_inches=0.0 尽可能减少白边
         buf.seek(0)
         image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
         plt.close(fig)
