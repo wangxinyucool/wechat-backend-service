@@ -13,7 +13,8 @@ from shapely.geometry import Polygon, MultiPolygon
 import io
 import base64
 import os
-
+plt.rcParams['font.sans-serif'] = ['SimHei']
+plt.rcParams['axes.unicode_minus'] = False
 # --- 全局路径设置 ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROVINCE_DATA_PATH = os.path.join(os.path.dirname(BASE_DIR), 'shanxigeo')
