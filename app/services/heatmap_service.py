@@ -105,20 +105,15 @@ def create_heatmap_image(excel_file, options):
         # ax.set_title("污染物浓度空间插值热力图", fontsize=18) # 移除标题
         fig.colorbar(heatmap, ax=ax, shrink=0.75) # 保留色标条，但移除标签文字
         
-        # 【最终修改】灵活的显示范围设置
+        # 使用固定的默认显示范围 (除非用户自定义)
         if 'extent' in options and options.get('extent'):
-            # 如果用户在前端自定义了范围，则优先使用用户的
             extent = options['extent']
             if all(k in extent for k in ['xmin', 'xmax', 'ymin', 'ymax']):
-                 ax.set_xlim(extent['xmin'], extent['xmax'])
-                 ax.set_ylim(extent['ymin'], extent['ymax'])
+                ax.set_xlim(extent['xmin'], extent['xmax'])
+                ax.set_ylim(extent['ymin'], extent['ymax'])
         else:
-            # 否则，根据边界文件动态计算最佳视野并增加5%的边距，确保显示完整
-            xmin_b, ymin_b, xmax_b, ymax_b = boundary_gdf.total_bounds
-            x_margin = (xmax_b - xmin_b) * 0.05
-            y_margin = (ymax_b - ymin_b) * 0.05
-            ax.set_xlim(xmin_b - x_margin, xmax_b + x_margin)
-            ax.set_ylim(ymin_b - y_margin, ymax_b + y_margin)
+            ax.set_xlim(111.4, 113.3)
+            ax.set_ylim(37.2, 38.5)
             
         # 移除坐标轴的刻度和标签
         ax.set_xticks([])
