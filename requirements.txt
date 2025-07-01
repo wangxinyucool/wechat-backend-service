@@ -8,3 +8,6 @@ geopandas
 matplotlib
 scipy
 PyKrige
+requests
+python-dotenv
+cachetools
