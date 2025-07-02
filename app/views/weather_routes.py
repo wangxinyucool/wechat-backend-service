@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request, Response
 import requests
 from app.config import settings
 # ------------------------------------
-
+from flask_cors import CORS
 from app.services import weather_service
 
 # 1. 创建一个蓝图对象
@@ -10,7 +10,7 @@ from app.services import weather_service
 # __name__ 是必需的参数
 # url_prefix 会给这个蓝图下的所有路由加上统一的前缀
 weather_bp = Blueprint('weather_bp', __name__, url_prefix='/api/weather')
-
+CORS(weather_bp)  # 对整个蓝图启用CORS
 
 # 2. 在蓝图上定义路由
 @weather_bp.route("/realtime/<string:city_name>", methods=['GET'])
@@ -79,28 +79,30 @@ def get_map_layers():
 
 @weather_bp.route("/map_tile/<string:op>/<int:z>/<int:x>/<int:y>", methods=['GET'])
 def get_map_tile_proxy(op, z, x, y):
-    """
-    作为OpenWeatherMap地图瓦片的安全代理。
-    """
     valid_ops = ["PR0", "TA2", "CL", "WS10", "APM"]
     if op not in valid_ops:
-        return "Invalid layer code", 400
+        return jsonify({"error": "Invalid layer code"}), 400
 
     tile_url = f"https://maps.openweathermap.org/maps/2.0/weather/{op}/{z}/{x}/{y}"
     params = {'appid': settings.API_KEY}
 
     try:
-        res = requests.get(tile_url, params=params)
+        res = requests.get(tile_url, params=params, timeout=(3, 10), stream=True)
         res.raise_for_status()
         
-        # 创建一个响应对象
-        response = Response(res.content, content_type=res.headers['Content-Type'])
-        
-        # *** 关键修改：手动添加CORS头，允许任何来源读取此响应 ***
+        response = Response(res.iter_content(chunk_size=1024)),
+                          content_type=res.headers['Content-Type'])
         response.headers['Access-Control-Allow-Origin'] = '*'
+        
+        # 透传缓存头
+        if 'Cache-Control' in res.headers:
+            response.headers['Cache-Control'] = res.headers['Cache-Control']
         
         return response
 
+    except requests.exceptions.Timeout:
+        current_app.logger.error(f"Timeout fetching tile: {tile_url}")
+        return jsonify({"error": "Upstream service timeout"}), 504
     except requests.exceptions.RequestException as e:
-        print(f"代理请求失败: {e}")
-        return "Failed to fetch tile", 502
+        current_app.logger.error(f"Tile proxy failed: {str(e)}")
+        return jsonify({"error": "Failed to fetch tile"}), 502
