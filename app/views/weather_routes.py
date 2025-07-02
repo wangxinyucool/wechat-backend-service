@@ -97,12 +97,12 @@ def get_map_tile_proxy(op, z, x, y):
     params = {'appid': settings.API_KEY}
 
     try:
-        # 使用流式请求，高效地将图片数据转发给前端
-        res = requests.get(tile_url, params=params, stream=True)
-        res.raise_for_status() # 如果请求失败则抛出异常
-
-        # 将从OpenWeatherMap收到的图片响应，直接返回给前端
-        return Response(res.iter_content(chunk_size=1024), content_type=res.headers['Content-Type'])
+        # *** 关键修改：不再使用流式传输 ***
+        # 1. 移除 stream=True
+        res = requests.get(tile_url, params=params)
+        res.raise_for_status()
+        # 2. 使用 res.content (完整的图片二进制数据) 而不是 res.iter_content
+        return Response(res.content, content_type=res.headers['Content-Type'])
 
     except requests.exceptions.RequestException as e:
         print(f"代理请求失败: {e}")
