@@ -73,3 +73,33 @@ def get_map_layers():
     """
     urls = weather_service.get_map_layer_urls()
     return jsonify(urls)
+
+# --- 新增：地图瓦片安全代理路由 ---
+@weather_bp.route("/map_tile/<string:op>/<int:z>/<int:x>/<int:y>", methods=['GET'])
+def get_map_tile_proxy(op, z, x, y):
+    """
+    作为OpenWeatherMap地图瓦片的安全代理。
+    API密钥在服务器端添加，不会暴露给前端。
+    """
+    # 为安全起见，验证图层代码是否有效
+    valid_ops = ["PR0", "TA2", "CL", "WS10", "APM"]
+    if op not in valid_ops:
+        return "Invalid layer code", 400
+
+    # 构造目标的OpenWeatherMap URL
+    tile_url = f"https://maps.openweathermap.org/maps/2.0/weather/{op}/{z}/{x}/{y}"
+    
+    # 准备请求参数，附上保密的API密钥
+    params = {'appid': settings.API_KEY}
+
+    try:
+        # 使用流式请求，高效地将图片数据转发给前端
+        res = requests.get(tile_url, params=params, stream=True)
+        res.raise_for_status() # 如果请求失败则抛出异常
+
+        # 将从OpenWeatherMap收到的图片响应，直接返回给前端
+        return Response(res.iter_content(chunk_size=1024), content_type=res.headers['Content-Type'])
+
+    except requests.exceptions.RequestException as e:
+        print(f"代理请求失败: {e}")
+        return "Failed to fetch tile", 502
