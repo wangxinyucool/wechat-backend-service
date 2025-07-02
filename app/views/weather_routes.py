@@ -68,41 +68,38 @@ def get_trends_weather(city_name):
 
     return jsonify(data)
 
-# --- 新增：获取地图图层API路由 ---
 @weather_bp.route("/map_layers", methods=['GET'])
 def get_map_layers():
     """
     获取所有可用的天气地图图层的URL模板。
-    前端将使用这些URL来在地图上渲染天气图层。
     """
     urls = weather_service.get_map_layer_urls()
     return jsonify(urls)
 
-# --- 新增：地图瓦片安全代理路由 ---
+
 @weather_bp.route("/map_tile/<string:op>/<int:z>/<int:x>/<int:y>", methods=['GET'])
 def get_map_tile_proxy(op, z, x, y):
     """
     作为OpenWeatherMap地图瓦片的安全代理。
-    API密钥在服务器端添加，不会暴露给前端。
     """
-    # 为安全起见，验证图层代码是否有效
     valid_ops = ["PR0", "TA2", "CL", "WS10", "APM"]
     if op not in valid_ops:
         return "Invalid layer code", 400
 
-    # 构造目标的OpenWeatherMap URL
     tile_url = f"https://maps.openweathermap.org/maps/2.0/weather/{op}/{z}/{x}/{y}"
-    
-    # 准备请求参数，附上保密的API密钥
     params = {'appid': settings.API_KEY}
 
     try:
-        # *** 关键修改：不再使用流式传输 ***
-        # 1. 移除 stream=True
         res = requests.get(tile_url, params=params)
         res.raise_for_status()
-        # 2. 使用 res.content (完整的图片二进制数据) 而不是 res.iter_content
-        return Response(res.content, content_type=res.headers['Content-Type'])
+        
+        # 创建一个响应对象
+        response = Response(res.content, content_type=res.headers['Content-Type'])
+        
+        # *** 关键修改：手动添加CORS头，允许任何来源读取此响应 ***
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        
+        return response
 
     except requests.exceptions.RequestException as e:
         print(f"代理请求失败: {e}")
