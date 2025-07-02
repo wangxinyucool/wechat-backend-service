@@ -1,4 +1,8 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, Response
+import requests
+from app.config import settings
+# ------------------------------------
+
 from app.services import weather_service
 
 # 1. 创建一个蓝图对象
