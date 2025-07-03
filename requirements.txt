@@ -11,3 +11,4 @@ PyKrige
 requests
 python-dotenv
 cachetools
+gevent
